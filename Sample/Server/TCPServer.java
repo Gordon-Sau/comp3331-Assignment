@@ -1,4 +1,4 @@
-package src.Server;
+package Sample.Server;
 /*
  * Java multi-threading server with TCP
  * There are two points of this example code:

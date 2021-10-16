@@ -1,4 +1,4 @@
-package src.Client;
+package Sample.Client;
 /*
  * Java socket programming client example with TCP
  * socket programming at the client side, which provides example of how to define client socket, how to send message to
