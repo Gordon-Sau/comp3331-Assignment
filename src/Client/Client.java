@@ -58,6 +58,8 @@ public class Client {
 
             state = new LoginState(this);
 
+            // TODO: can read from both command line and server
+            // need to rely on the state to choose the message (using select)
             String message;
             while (true) {
                 try {
@@ -79,6 +81,8 @@ public class Client {
                 }
             }
 
+            // TODO: may not know what should be closed 
+            // rely on the stat to close
             try {
                 dataInputStream.close();
                 dataOutputStream.close();

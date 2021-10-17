@@ -1,18 +1,44 @@
 package src.Server;
 
-
 import java.io.*;
 import java.net.*;
+import java.time.LocalDateTime;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
     private static int serverPort;
     private static int blockDuration;
+
+    // when there is no message received in timeout
+    // disconnect and log the user out
     private static int timeout;
+
+    // in-memory copy of the credential.txt
     private static Map<String, String> credentials = new ConcurrentHashMap<>();
+
+    // write to the credential.txt file
     private static FileWriter credentialsWriter;
+
+    // add when 3 invalid logins
+    // check whether the user is blocked(in the key or current time > time) for each login
+    // remove the username if he/she is no longer blocked
+    private static Map<String, LocalDateTime> blockedLogins = new ConcurrentHashMap<>();
+
+    // add to connections if the user has logged in
+    private static Map<String, ClientThread> connections = new ConcurrentHashMap<>();
+    private static Map<String, Set<String>> blackLists = new ConcurrentHashMap<>();
+
+    // if online and have read the message(after valid login), remove the user from the map
+    // if become offline, add back with an empty list as the value
+    // NOTE: can also be used to check if one is offline
+    private static Map<String, List<String>> unreadMessages = new ConcurrentHashMap<>();
+
+    // TODO: history (stores login time for each users when they have logged in successfully(correct password))
+
     public static void main(String[] args) throws IOException{
         if (args.length != 3) {
             System.out.println("===== Error usage: java Server SERVER_PORT BLOCK_DURATION TIMEOUT =====");
@@ -56,8 +82,36 @@ public class Server {
             this.clientSocket = clientSocket;
         }
 
+        public Socket getSocket() {
+            return clientSocket;
+        }
+
+        public int getBlockDuration() {
+            return blockDuration;
+        }
+
+        public int getTimeoutLength() {
+            return timeout;
+        }
+
         public Map<String, String> getCredentials() {
             return credentials;
+        }
+
+        public Map<String, LocalDateTime> getBlockedLogins() {
+            return blockedLogins;
+        }
+
+        public Map<String, ClientThread> getConnections() {
+            return connections;
+        }
+
+        public Map<String, Set<String>> getBlackList() {
+            return blackLists;
+        }
+
+        public Map<String, List<String>> getUnreadMessages() {
+            return unreadMessages;
         }
 
         public void setState(ServerState state) {
@@ -68,6 +122,7 @@ public class Server {
             synchronized(credentialsWriter) {
                 try {
                     credentialsWriter.append(str);
+                    credentialsWriter.flush();
                 } catch (IOException e) {
                     System.out.println("fail to write to credentials.txt");
                     e.printStackTrace();
@@ -85,6 +140,17 @@ public class Server {
                 dataInputStream = new DataInputStream(clientSocket.getInputStream());
                 dataOutputStream = new DataOutputStream(clientSocket.getOutputStream());
             } catch (Exception e) {
+                try {
+                    if (dataInputStream != null) {
+                        dataInputStream.close();
+                    }
+                    if (dataOutputStream != null) {
+                        dataOutputStream.close();
+                    }
+                } catch (IOException closeException) {
+                    closeException.printStackTrace();
+                    return;
+                }
                 e.printStackTrace();
                 return;
             }
@@ -98,15 +164,20 @@ public class Server {
             String message;
             while (true) {
                 try {
+                    // server only read from client
                     message = inFromClient.readLine();
                 } catch (IOException e) {
                     e.printStackTrace();
-                    return;
+                    break;
                 }
 
                 if (message != null) {
+                    // every message from the client is sent to the state to
+                    // decide what to do next
                     state.receiveMessage(message);
+                    // TODO: return boolean to indicate we should close the connection
                 } else {
+                    // the client close the connection
                     break;
                 }
             }
@@ -115,6 +186,7 @@ public class Server {
                 inFromClient.close();
                 outToClient.close();
                 clientSocket.close();
+                // TODO: remove from connections and add to unreadMessages
             } catch (Exception e) {
                 e.printStackTrace();
                 return;

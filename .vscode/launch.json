@@ -1,0 +1,44 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Launch TCPClient",
+            "request": "launch",
+            "mainClass": "Sample.Client.TCPClient",
+            "projectName": "comp3331_assignment_265cc862"
+        },
+        {
+            "type": "java",
+            "name": "Launch TCPServer",
+            "request": "launch",
+            "mainClass": "Sample.Server.TCPServer",
+            "projectName": "comp3331_assignment_265cc862"
+        },
+        {
+            "type": "java",
+            "name": "Launch Client",
+            "request": "launch",
+            "mainClass": "src.Client.Client",
+            "projectName": "comp3331_assignment_265cc862",
+            "args": ["5000"],
+        },
+        {
+            "type": "java",
+            "name": "Launch Server",
+            "request": "launch",
+            "mainClass": "src.Server.Server",
+            "projectName": "comp3331_assignment_265cc862",
+            "args": ["5000", "1000", "1000"],
+        }
+    ]
+}
