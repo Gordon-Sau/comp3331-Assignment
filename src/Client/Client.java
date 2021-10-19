@@ -14,22 +14,22 @@ public class Client {
 
         int serverPort = Integer.parseInt(args[0]);
         Socket serverConnection = new Socket("127.0.0.1", serverPort);
-        ServerCommunication serverCommunication = new ServerCommunication(serverConnection);
+        ClientObj serverCommunication = new ClientObj(serverConnection);
         serverCommunication.start();
     }
 
-    public static class ServerCommunication {
+    public static class ClientObj {
         public final Socket serverConnection;
         public BufferedReader inFromServer;
         public BufferedWriter outToServer;
         public BufferedReader cmdReader;
-        private ClientState state;
+        public ClientState state;
 
-        public ServerCommunication(Socket serverConnection) {
+        public ClientObj(Socket serverConnection) {
             this.serverConnection = serverConnection;
         }
 
-        public void start() {
+        public void start() throws Exception {
             DataInputStream dataInputStream;
             DataOutputStream dataOutputStream;
             try {
@@ -44,58 +44,61 @@ public class Client {
             outToServer = new BufferedWriter(new OutputStreamWriter(dataOutputStream));
             cmdReader = new BufferedReader(new InputStreamReader(System.in));
 
-            // send username
+            ServerReceiveThread serverReceiveThread = new ServerReceiveThread(this);
+            serverReceiveThread.start();
+
+            // this thread is the thread that handle input from command line
+
+            state = new StartState(this);
             System.out.print("username: ");
-            String username;
-            try {
-                username = cmdReader.readLine();
-                outToServer.write("username " + username + "\n");
-                outToServer.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
 
-            state = new LoginState(this);
-
-            // TODO: can read from both command line and server
-            // need to rely on the state to choose the message (using select)
+            // read from both command line and send messages to server
+            // implement like as a state machine
             String message;
             while (true) {
-                try {
-                    message = inFromServer.readLine();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    break;
-                }
+                message = cmdReadLineNoExcept();
 
                 if (message != null) {
-                    try {
-                        state.receiveMessage(message);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        break;
+                    synchronized(this) {
+                        state.receiveCmd(message);
                     }
                 } else {
-                    break;
+                    // The client don't write messages any more
+                    System.out.println("exit program");
+                    System.exit(0);
                 }
             }
 
-            // TODO: may not know what should be closed 
-            // rely on the stat to close
+        }
+
+        public String cmdReadLineNoExcept() {
             try {
-                dataInputStream.close();
-                dataOutputStream.close();
-                serverConnection.close();
+                return cmdReader.readLine();
             } catch (IOException e) {
                 e.printStackTrace();
-                return;
+                System.out.println("Error: cannot read from command line");
+                System.out.println("exit program");
+                System.exit(1);
+                return null;
             }
         }
 
-        public void setState(ClientState state) {
+        synchronized public void setState(ClientState state) {
+            // avoid changing state on two threads at the same time
             this.state = state;
         }
 
+        public void writeToServerNoExcept(String message) {
+            try {
+                outToServer.write(message);
+                outToServer.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("lost connection");
+                System.exit(1);
+            }
+        }
+
     }
+    
 }

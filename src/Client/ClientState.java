@@ -1,12 +1,18 @@
 package src.Client;
 
-import java.io.IOException;
-
 public abstract class ClientState {
-    protected Client.ServerCommunication client;
-    public ClientState(Client.ServerCommunication client) {
+    protected Client.ClientObj client;
+    public ClientState(Client.ClientObj client) {
         this.client = client;
     }
 
-    abstract public void receiveMessage(String message) throws IOException;
+    abstract public void receiveCmd(String message);
+
+    synchronized public void receiveServer(String message) {
+        if (message.equals("timeout")) {
+            System.out.println("timeout");
+            System.out.println("exit program");
+            System.exit(0);
+        }
+    }
 }

@@ -9,6 +9,8 @@ public class NormalState extends ServerState {
 
     @Override
     public void receiveMessage(String message) {
-        System.out.println(message);
+        synchronized(clientThread) {
+            System.out.println(clientThread.username + ' ' + message);
+        }
     }
 }

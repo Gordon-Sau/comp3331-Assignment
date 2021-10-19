@@ -42,6 +42,7 @@ public class Server {
     public static void main(String[] args) throws IOException{
         if (args.length != 3) {
             System.out.println("===== Error usage: java Server SERVER_PORT BLOCK_DURATION TIMEOUT =====");
+            return;
         }
 
         // store credentials
@@ -76,7 +77,7 @@ public class Server {
         public String username;
         public BufferedReader inFromClient;
         public BufferedWriter outToClient;
-
+        boolean isConnecting = true;
 
         ClientThread(Socket clientSocket) {
             this.clientSocket = clientSocket;
@@ -115,7 +116,9 @@ public class Server {
         }
 
         public void setState(ServerState state) {
-            this.state = state;
+            synchronized(this) {
+                this.state = state;
+            }
         }
 
         public void appendCredential(String str) {
@@ -127,6 +130,18 @@ public class Server {
                     System.out.println("fail to write to credentials.txt");
                     e.printStackTrace();
                 }
+            }
+        }
+
+        public void disconnect() {
+            synchronized (this) {
+                this.isConnecting = false;
+            }
+        }
+
+        public void blockUser() {
+            synchronized(blockedLogins) {
+                blockedLogins.put(username, LocalDateTime.now().plusSeconds(blockDuration));
             }
         }
 
@@ -162,7 +177,7 @@ public class Server {
             state = new GetUsernameState(this);
 
             String message;
-            while (true) {
+            while (isConnecting) {
                 try {
                     // server only read from client
                     message = inFromClient.readLine();
@@ -172,10 +187,10 @@ public class Server {
                 }
 
                 if (message != null) {
+                    System.out.println(message);
                     // every message from the client is sent to the state to
                     // decide what to do next
                     state.receiveMessage(message);
-                    // TODO: return boolean to indicate we should close the connection
                 } else {
                     // the client close the connection
                     break;

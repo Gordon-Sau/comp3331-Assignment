@@ -17,17 +17,20 @@ public class Authentication extends ServerState {
                 try {
                     clientThread.outToClient.write("welcome\n");
                     clientThread.outToClient.flush();
-                    
                 } catch (IOException e) {
                     e.printStackTrace();
                     return;
                 }
+                // TODO: broadcast precense
+                System.out.println(clientThread.username + "logged in");
+                clientThread.setState(new NormalState(clientThread));
             } else {
-                if (numWrongLogin < 3) {
+                if (numWrongLogin < 2) {
                     try {
                         clientThread.outToClient.write("wrongpassword\n");
                         clientThread.outToClient.flush();
                         numWrongLogin++;
+                        // stay in this state
                     } catch (IOException e) {
                         e.printStackTrace();
                         return;
@@ -38,10 +41,9 @@ public class Authentication extends ServerState {
                         clientThread.outToClient.flush();
 
                         // TODO: block the client for BLOCK_DURATION seconds
-
+                        clientThread.blockUser();
                         // quit the client
-                        clientThread.outToClient.close();
-                        clientThread.inFromClient.close();
+                        clientThread.disconnect();
                     } catch (IOException e) {
                         e.printStackTrace();
                         return;

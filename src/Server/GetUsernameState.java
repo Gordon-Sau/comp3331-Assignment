@@ -18,6 +18,8 @@ public class GetUsernameState extends ServerState {
 
             // TODO: check whether the user has already logged in (using connections)
 
+            // TODO: update connections
+
             if (clientThread.getCredentials().containsKey(splitMsg[1])) {
                 try {
                     clientThread.outToClient.write("password?\n");
@@ -29,13 +31,13 @@ public class GetUsernameState extends ServerState {
                 }
             } else {
                 try {
-                    clientThread.setState(new NewUser(clientThread));
                     clientThread.outToClient.write("newuser\n");
                     clientThread.outToClient.flush();
                 } catch (Exception e) {
                     e.printStackTrace();
                     return;
                 }
+                clientThread.setState(new NewUser(clientThread));
             }
         }
     }

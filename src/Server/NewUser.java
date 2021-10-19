@@ -12,8 +12,9 @@ public class NewUser extends ServerState {
         String[] splitMsg = message.split(" ");
         if (splitMsg[0].equals("newpassword")) {
             clientThread.getCredentials().put(clientThread.username, splitMsg[1]);
-            clientThread.appendCredential(clientThread.username + " " + splitMsg[1] + "\n");
+            clientThread.appendCredential("\n" + clientThread.username + " " + splitMsg[1]);
             System.out.println("new user");
+            // TODO: broadcast presence
             try {
                 clientThread.outToClient.write("welcome\n");
                 clientThread.outToClient.flush();
@@ -21,6 +22,8 @@ public class NewUser extends ServerState {
                 e.printStackTrace();
                 return;
             }
+
+            clientThread.setState(new NormalState(clientThread));
         }
     }
 }
