@@ -1,6 +1,6 @@
 package src.Server;
 
-import java.io.IOException;
+import src.Server.Server.ClientThread;
 
 public class NewUser extends ServerState {
     public NewUser(Server.ClientThread clientThread) {
@@ -12,18 +12,23 @@ public class NewUser extends ServerState {
         String[] splitMsg = message.split(" ");
         if (splitMsg[0].equals("newpassword")) {
             clientThread.getCredentials().put(clientThread.username, splitMsg[1]);
-            clientThread.appendCredential("\n" + clientThread.username + " " + splitMsg[1]);
+            clientThread.appendCredential(clientThread.username + " " + splitMsg[1] + "\n");
             System.out.println("new user");
-            // TODO: broadcast presence
-            try {
-                clientThread.outToClient.write("welcome\n");
-                clientThread.outToClient.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
+
+            // update connections
+            clientThread.getConnections().put(clientThread.username, clientThread);
+
+            // TODO: broadcast presence if not blocked
+            // System.out.println(clientThread.username + "logged in");
+            for (ClientThread otherThread: clientThread.getAllUnblacklistedConnections()) {
+                otherThread.writeToClient("presence " + clientThread.username + " log in\n");
+            }
+
+            if (!clientThread.writeToClient("welcome\n") ) {
                 return;
             }
 
-            clientThread.setState(new NormalState(clientThread));
+            clientThread.setState(new ServerNormalState(clientThread));
         }
     }
 }

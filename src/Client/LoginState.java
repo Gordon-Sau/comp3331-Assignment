@@ -27,13 +27,18 @@ public class LoginState extends ClientState {
 
         } else if (message.equals("welcome")) {
             System.out.println("welcome");
-            client.setState(new NormalState(client));
+            client.setState(new ClientNormalState(client));
 
         } else if (message.equals("block")) {
             System.out.println("you are blocked");
             System.out.println("exit program");
             System.exit(0);
-        } else {
+        } else if (message.equals("loggedin")) {
+            System.out.println("This user has already logged in");
+            System.out.print("username: ");
+            client.setState(new StartState(client));
+
+        }else {
             super.receiveServer(message);
         }
     }

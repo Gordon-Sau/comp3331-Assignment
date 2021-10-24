@@ -1,6 +1,6 @@
 package src.Server;
 
-import java.io.IOException;
+import src.Server.Server.ClientThread;
 
 public class Authentication extends ServerState {
     private int numWrongLogin = 0;
@@ -14,40 +14,37 @@ public class Authentication extends ServerState {
         String[] splitMsg = message.split(" ");
         if (splitMsg[0].equals("password")) {
             if (splitMsg[1].equals(clientThread.getCredentials().get(clientThread.username))) {
-                try {
-                    clientThread.outToClient.write("welcome\n");
-                    clientThread.outToClient.flush();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if (!clientThread.writeToClient("welcome\n") ) {
                     return;
                 }
-                // TODO: broadcast precense
-                System.out.println(clientThread.username + "logged in");
-                clientThread.setState(new NormalState(clientThread));
+
+                // update connections
+                clientThread.getConnections().put(clientThread.username, clientThread);
+
+                // TODO: broadcast presence if not blocked
+                // System.out.println(clientThread.username + "logged in");
+                for (ClientThread otherThread: clientThread.getAllUnblacklistedConnections()) {
+                    otherThread.writeToClient("presence " + clientThread.username + " log out\n");
+                }
+
+                // send unread messages
+                clientThread.sendUnreadMessages();
+
+                clientThread.setState(new ServerNormalState(clientThread));
             } else {
                 if (numWrongLogin < 2) {
-                    try {
-                        clientThread.outToClient.write("wrongpassword\n");
-                        clientThread.outToClient.flush();
-                        numWrongLogin++;
-                        // stay in this state
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    numWrongLogin++;
+                    if (!clientThread.writeToClient("wrongpassword\n")) {
                         return;
                     }
                 } else {
-                    try {
-                        clientThread.outToClient.write("block\n");
-                        clientThread.outToClient.flush();
-
-                        // TODO: block the client for BLOCK_DURATION seconds
-                        clientThread.blockUser();
-                        // quit the client
-                        clientThread.disconnect();
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    if (!clientThread.writeToClient("block\n")) {
                         return;
                     }
+                    // block the client for BLOCK_DURATION seconds
+                    clientThread.blockUser();
+                    // quit the client
+                    clientThread.disconnect();
                 }
             }
         }

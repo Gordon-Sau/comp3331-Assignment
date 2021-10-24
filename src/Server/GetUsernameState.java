@@ -1,5 +1,7 @@
 package src.Server;
 
+import java.time.LocalDateTime;
+
 public class GetUsernameState extends ServerState {
     public GetUsernameState(Server.ClientThread clientThread) {
         super(clientThread);
@@ -11,30 +13,41 @@ public class GetUsernameState extends ServerState {
         if (splitMsg[0].equals("username")) {
             clientThread.username = splitMsg[1];
 
-            // TODO: check blocked and remove if the time has been passed
-            // if blocked send "block\n" and close the connections
-            if (clientThread.getBlockedLogins().containsKey(splitMsg[1])) {
-            }
-
-            // TODO: check whether the user has already logged in (using connections)
-
-            // TODO: update connections
-
+            // check credentials to see if the user is new
             if (clientThread.getCredentials().containsKey(splitMsg[1])) {
-                try {
-                    clientThread.outToClient.write("password?\n");
-                    clientThread.outToClient.flush();
-                    clientThread.setState(new Authentication(clientThread));
-                } catch (Exception e) {
-                    e.printStackTrace();
+
+                // check if the user is blocked and remove if the time has been passed
+                // if blocked send "block\n" and close the connections
+                if (clientThread.getBlockedLogins().containsKey(clientThread.username)) {
+                    if (clientThread.getBlockedLogins().get(clientThread.username).isBefore(LocalDateTime.now())) {
+                        clientThread.getBlockedLogins().remove(clientThread.username);
+                    } else {
+                        // send "block\n" and disconnect
+                        if (!clientThread.writeToClient("block\n") ) {
+                            return;
+                        }
+                        clientThread.disconnect();
+                        return;
+                    }
+                }
+
+                // check whether the user has already logged in (using connections)
+                if (clientThread.getConnections().containsKey(clientThread.username)) {
+                    if (!clientThread.writeToClient("loggedin\n") ) {
+                        return;
+                    }
+                    // stay in this state
                     return;
                 }
+
+                // asks for the password
+                if (!clientThread.writeToClient("password?\n")) {
+                    return;
+                }
+                clientThread.setState(new Authentication(clientThread));
+
             } else {
-                try {
-                    clientThread.outToClient.write("newuser\n");
-                    clientThread.outToClient.flush();
-                } catch (Exception e) {
-                    e.printStackTrace();
+                if (!clientThread.writeToClient("newuser\n") ) {
                     return;
                 }
                 clientThread.setState(new NewUser(clientThread));

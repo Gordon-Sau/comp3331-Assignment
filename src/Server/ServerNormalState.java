@@ -2,8 +2,8 @@ package src.Server;
 
 import src.Server.Server.ClientThread;
 
-public class NormalState extends ServerState {
-    public NormalState(ClientThread clientThread) {
+public class ServerNormalState extends ServerState {
+    public ServerNormalState(ClientThread clientThread) {
         super(clientThread);
     }
 

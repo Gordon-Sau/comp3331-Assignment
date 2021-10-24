@@ -5,9 +5,11 @@ import java.net.*;
 import java.time.LocalDateTime;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class Server {
     private static int serverPort;
@@ -30,27 +32,35 @@ public class Server {
 
     // add to connections if the user has logged in
     private static Map<String, ClientThread> connections = new ConcurrentHashMap<>();
+
+    // add to the blacklist when the user blocks another users
+    // the blocker is in the value, the one who got blocked is in the key
     private static Map<String, Set<String>> blackLists = new ConcurrentHashMap<>();
 
-    // if online and have read the message(after valid login), remove the user from the map
+    // if online and have read the message(after valid login), remove the user from
+    // the map
     // if become offline, add back with an empty list as the value
     // NOTE: can also be used to check if one is offline
     private static Map<String, List<String>> unreadMessages = new ConcurrentHashMap<>();
 
-    // TODO: history (stores login time for each users when they have logged in successfully(correct password))
+    // history (stores login time for each users when they have logged in
+    // successfully(correct password))
+    private static Map<String, LocalDateTime> history = new ConcurrentHashMap<>();
 
-    public static void main(String[] args) throws IOException{
+    public static void main(String[] args) throws IOException {
         if (args.length != 3) {
             System.out.println("===== Error usage: java Server SERVER_PORT BLOCK_DURATION TIMEOUT =====");
             return;
         }
 
         // store credentials
+        // and create unreadMessages for all users in the credentials.txt
         Scanner myReader = new Scanner(new File(".", "credentials.txt"));
         while (myReader.hasNextLine()) {
             String data = myReader.nextLine();
             String[] credentialTuple = data.split(" ");
             credentials.put(credentialTuple[0], credentialTuple[1]);
+            unreadMessages.put(credentialTuple[0], new ArrayList<>());
         }
         myReader.close();
 
@@ -59,7 +69,7 @@ public class Server {
         // create welcomeSocket
         serverPort = Integer.parseInt(args[0]);
         blockDuration = Integer.parseInt(args[1]);
-        timeout = Integer.parseInt(args[2]);
+        timeout = Integer.parseInt(args[2]) * 1000;
         ServerSocket welcomeSocket = new ServerSocket(serverPort);
         System.out.println("server is running");
 
@@ -116,13 +126,65 @@ public class Server {
         }
 
         public void setState(ServerState state) {
-            synchronized(this) {
+            synchronized (this) {
                 this.state = state;
             }
         }
 
+        public boolean writeToClient(String message) {
+            try {
+                synchronized(outToClient) {
+                    outToClient.write(message);
+                    outToClient.flush();
+                }
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                disconnect();
+                return false;
+            }
+        }
+
+        public boolean writeToClientBuffered(String message) {
+            try {
+                outToClient.write(message);
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                disconnect();
+                return false;
+            }
+        }
+
+        public boolean writeToClientFlush() {
+            try {
+                outToClient.flush();
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                disconnect();
+                return false;
+            }
+        }
+
+        public boolean sendUnreadMessages() {
+            boolean isSent;
+            synchronized (outToClient) {
+                for (String unreadMessage : getUnreadMessages().get(username)) {
+                    if (!writeToClientBuffered("unread " + unreadMessage + '\n')) {
+                        return false;
+                    }
+                }
+                isSent = writeToClientFlush();
+            }
+            if (isSent) {
+                unreadMessages.remove(username);
+            }
+            return isSent;
+        }
+
         public void appendCredential(String str) {
-            synchronized(credentialsWriter) {
+            synchronized (credentialsWriter) {
                 try {
                     credentialsWriter.append(str);
                     credentialsWriter.flush();
@@ -140,9 +202,115 @@ public class Server {
         }
 
         public void blockUser() {
-            synchronized(blockedLogins) {
-                blockedLogins.put(username, LocalDateTime.now().plusSeconds(blockDuration));
+            blockedLogins.put(username, LocalDateTime.now().plusSeconds(blockDuration));
+        }
+
+        // get online users except the user and the blockers
+        public List<String> getOnlineUsers() {
+            Set<String> blockers = blackLists.get(username);
+            if (blockers == null) {
+                return connections.keySet().stream()
+                    .filter(user-> !user.equals(username))
+                    .collect(Collectors.toList());
             }
+            synchronized(blockers) {
+                return connections.keySet().stream()
+                    .filter(user-> 
+                        !user.equals(username) && 
+                        !blockers.contains(user))
+                    .collect(Collectors.toList());
+            }
+        }
+
+        public void recordLoginHistory() {
+            history.put(username, LocalDateTime.now());
+        }
+
+        public List<String> getHistorySince(int seconds) {
+            // TODO:
+            LocalDateTime since = LocalDateTime.now().minusSeconds(seconds);
+            Set<String> blockers = blackLists.get(username);
+            if (blockers == null) {
+                return history.entrySet().stream()
+                    .filter(entry-> 
+                        !entry.getKey().equals(username) && 
+                        since.isBefore(entry.getValue()))
+                    .map(entry->entry.getKey())
+                    .collect(Collectors.toList());
+            }
+            synchronized(blockers) {
+                return history.entrySet().stream()
+                    .filter(entry-> 
+                        !entry.getKey().equals(username) && 
+                        !blockers.contains(entry.getKey()) && 
+                        since.isBefore(entry.getValue()))
+                    .map(entry->entry.getKey())
+                    .collect(Collectors.toList());
+            }
+        }
+
+        // TODO:
+        public boolean blacklist(String blacklistUsername) {
+            if (!credentials.containsKey(blacklistUsername)) {
+                return false;
+            }
+            if (blacklistUsername.equals(username)) {
+                return false;
+            }
+            synchronized (blackLists) {
+                Set<String> blockers = blackLists.get(blacklistUsername);
+
+                if (blockers == null) {
+                    Set<String> blockerSet = ConcurrentHashMap.newKeySet();
+                    blockerSet.add(username);
+                    blackLists.put(blacklistUsername, blockerSet);
+                } else {
+                    blockers.add(username);
+                }
+            }
+            return true;
+        }
+
+        // TODO: 
+        public boolean unblacklist(String unblacklistUsername) {
+            Set<String> blockers = blackLists.get(unblacklistUsername);
+            if (blockers == null) {
+                return false;
+            }
+            return blockers.remove(username);
+        }
+
+        public Set<String> getBlockers() {
+            return blackLists.get(username);
+        }
+
+        // TODO:
+        public List<ClientThread> getAllUnblacklistedConnections() {
+            Set<String> blockers = blackLists.get(username);
+            if (blockers == null) {
+                return connections.entrySet().stream()
+                .filter(connection->!connection.getKey().equals(username))
+                .map(connection->connection.getValue())
+                .collect(Collectors.toList());
+            }
+            synchronized(blockers) {
+                return connections.entrySet().stream()
+                    .filter(connection->
+                        !connection.getKey().equals(username) &&
+                        !blockers.contains(connection.getKey()))
+                    .map(connection->connection.getValue())
+                    .collect(Collectors.toList());
+            }
+        }
+
+        // TODO:
+        public boolean isBlacklisted(String receiverUsername) {
+            Set<String> blockers = blackLists.get(username);
+            if (blockers == null) return false;
+            if (blockers.contains(username)) {
+                return true;
+            }
+            return false;
         }
 
         @Override
@@ -178,9 +346,20 @@ public class Server {
 
             String message;
             while (isConnecting) {
+                // set timeout
+                try {
+                    clientSocket.setSoTimeout(timeout);
+                } catch (SocketException e) {
+                    e.printStackTrace();
+                    break;
+                }
+
                 try {
                     // server only read from client
                     message = inFromClient.readLine();
+                } catch (SocketTimeoutException e) {
+                    writeToClient("timeout\n");
+                    break;
                 } catch (IOException e) {
                     e.printStackTrace();
                     break;
@@ -201,10 +380,22 @@ public class Server {
                 inFromClient.close();
                 outToClient.close();
                 clientSocket.close();
-                // TODO: remove from connections and add to unreadMessages
             } catch (Exception e) {
                 e.printStackTrace();
                 return;
+            }
+
+            // remove from connections and add to unreadMessages
+            if (username != null && connections.containsKey(username)) {
+                connections.remove(username);
+                // TODO: broadcast presence: username log out
+                for (ClientThread otherThread: getAllUnblacklistedConnections()) {
+                    otherThread.writeToClient("presence " + username + " log out\n");
+                }
+            }
+
+            if (username != null && !unreadMessages.containsKey(username)) {
+                unreadMessages.put(username, new ArrayList<String>());
             }
 
         }
