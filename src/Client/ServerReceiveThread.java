@@ -28,9 +28,9 @@ public class ServerReceiveThread extends Thread {
                     client.state.receiveServer(message);
                 }
             } else {
-                System.out.println("timeout");
-                System.out.println("lost connection");
-                break;
+                System.out.println("lost connection to the server");
+                System.out.println("exit program");
+                System.exit(1);
             }
         }
     }

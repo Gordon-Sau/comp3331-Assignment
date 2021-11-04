@@ -18,7 +18,13 @@ public class NewUser extends ServerState {
             // update connections
             clientThread.getConnections().put(clientThread.username, clientThread);
 
-            // TODO: broadcast presence if not blocked
+            clientThread.recordLoginHistory();
+
+            // broadcast presence if not blocked
+            for (ClientThread otherThread: clientThread.getAllUnblacklistedConnections()) {
+                otherThread.writeToClient("presence " + clientThread.username  + " log in\n");
+            }
+
             // System.out.println(clientThread.username + "logged in");
             for (ClientThread otherThread: clientThread.getAllUnblacklistedConnections()) {
                 otherThread.writeToClient("presence " + clientThread.username + " log in\n");

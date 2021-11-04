@@ -2,7 +2,8 @@ package src.Client;
 
 
 import java.net.*;
-
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.io.*;
 
 public class Client {
@@ -24,6 +25,7 @@ public class Client {
         public BufferedWriter outToServer;
         public BufferedReader cmdReader;
         public ClientState state;
+        public Map<String, Socket> p2pConnections = new ConcurrentHashMap<>();
 
         public ClientObj(Socket serverConnection) {
             this.serverConnection = serverConnection;

@@ -20,11 +20,11 @@ public class Authentication extends ServerState {
 
                 // update connections
                 clientThread.getConnections().put(clientThread.username, clientThread);
-
-                // TODO: broadcast presence if not blocked
-                // System.out.println(clientThread.username + "logged in");
+                clientThread.recordLoginHistory();
+                // broadcast presence if not blocked
+                // System.out.println(clientThread.username + "log in");
                 for (ClientThread otherThread: clientThread.getAllUnblacklistedConnections()) {
-                    otherThread.writeToClient("presence " + clientThread.username + " log out\n");
+                    otherThread.writeToClient("presence " + clientThread.username + " log in\n");
                 }
 
                 // send unread messages

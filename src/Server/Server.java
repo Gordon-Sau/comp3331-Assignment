@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -313,6 +314,30 @@ public class Server {
             return false;
         }
 
+        public void writeConnectedOrWriteUnread(String username, String message1, String message2) {
+            synchronized(connections) {
+                if (connections.containsKey(username)) {
+                    connections.get(username).writeToClient(message1);
+                } else {
+                    // write to unread
+                    writeToUnreadMessages(username, message2);
+                }
+            }
+        }
+
+        public void writeToUnreadMessages(String username, String message) {
+            synchronized(unreadMessages) {
+                List<String> unreadMessagesOfTheUser = unreadMessages.get(username);
+                if (unreadMessagesOfTheUser == null) {
+                    unreadMessages.put(username, new ArrayList<>(Arrays.asList(message)));
+                } else {
+                    synchronized(unreadMessagesOfTheUser) {
+                        unreadMessagesOfTheUser.add(message);
+                    }
+                }
+            }
+        }
+
         @Override
         public void run() {
             super.run();
@@ -376,6 +401,23 @@ public class Server {
                 }
             }
 
+            // remove from connections and add to unreadMessages
+            synchronized(connections) {
+                if (username != null && connections.containsKey(username)) {
+                    connections.remove(username);
+                    // broadcast presence: username log out
+                    for (ClientThread otherThread: getAllUnblacklistedConnections()) {
+                        otherThread.writeToClient("presence " + username + " log out\n");
+                    }
+                }
+            }
+
+            synchronized(unreadMessages) {
+                if (username != null && !unreadMessages.containsKey(username)) {
+                    unreadMessages.put(username, new ArrayList<String>());
+                }
+            }
+
             try {
                 inFromClient.close();
                 outToClient.close();
@@ -383,19 +425,6 @@ public class Server {
             } catch (Exception e) {
                 e.printStackTrace();
                 return;
-            }
-
-            // remove from connections and add to unreadMessages
-            if (username != null && connections.containsKey(username)) {
-                connections.remove(username);
-                // TODO: broadcast presence: username log out
-                for (ClientThread otherThread: getAllUnblacklistedConnections()) {
-                    otherThread.writeToClient("presence " + username + " log out\n");
-                }
-            }
-
-            if (username != null && !unreadMessages.containsKey(username)) {
-                unreadMessages.put(username, new ArrayList<String>());
             }
 
         }
