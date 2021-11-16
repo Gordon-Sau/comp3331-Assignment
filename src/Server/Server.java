@@ -256,7 +256,6 @@ public class Server {
             }
         }
 
-        // TODO:
         public boolean blacklist(String blacklistUsername) {
             if (!credentials.containsKey(blacklistUsername)) {
                 return false;
@@ -264,7 +263,7 @@ public class Server {
             if (blacklistUsername.equals(username)) {
                 return false;
             }
-            synchronized (blackLists) {
+            synchronized(blackLists) {
                 Set<String> blockers = blackLists.get(blacklistUsername);
 
                 if (blockers == null) {
@@ -272,26 +271,42 @@ public class Server {
                     blockerSet.add(username);
                     blackLists.put(blacklistUsername, blockerSet);
                 } else {
-                    blockers.add(username);
+                    synchronized(blockers) {
+                        blockers.add(username);
+                    }
                 }
             }
             return true;
         }
 
-        // TODO: 
         public boolean unblacklist(String unblacklistUsername) {
+            Boolean success;
             Set<String> blockers = blackLists.get(unblacklistUsername);
             if (blockers == null) {
                 return false;
             }
-            return blockers.remove(username);
+
+            synchronized(blockers) {
+                success = blockers.remove(username);
+            }
+
+            if (success) {
+                synchronized(blackLists) {
+                    blockers = blackLists.get(unblacklistUsername);
+                    synchronized(blockers) {
+                    if (blockers.size() == 0) {
+                            blackLists.remove(unblacklistUsername);
+                        }
+                    }
+                }
+            }
+            return success;
         }
 
         public Set<String> getBlockers() {
             return blackLists.get(username);
         }
 
-        // TODO:
         public List<ClientThread> getAllUnblacklistedConnections() {
             Set<String> blockers = blackLists.get(username);
             if (blockers == null) {
@@ -310,7 +325,6 @@ public class Server {
             }
         }
 
-        // TODO:
         public boolean isBlacklisted(String receiverUsername) {
             Set<String> blockers = blackLists.get(username);
             if (blockers == null) return false;
