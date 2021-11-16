@@ -139,8 +139,8 @@ public class ServerNormalState extends ServerState {
             String otherUsername = splitMsg[1];
             // we can get the ip from this socket
             // https://www.baeldung.com/java-client-get-ip-address
-            String forwardIP = ((InetSocketAddress)clientThread.getSocket().getRemoteSocketAddress()).getAddress().getHostAddress();
-            System.out.println("forwardIP = " + forwardIP); // debug
+            String forwardIP = ((InetSocketAddress)clientThread.getSocket().getRemoteSocketAddress())
+                .getAddress().getHostAddress();
             // NOTE: the port of this socket and the port in the message are different
             // send the port in the message
             String forwardPort = splitMsg[2];
