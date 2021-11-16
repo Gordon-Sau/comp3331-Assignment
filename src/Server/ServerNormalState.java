@@ -1,5 +1,6 @@
 package src.Server;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,7 @@ public class ServerNormalState extends ServerState {
 
     @Override
     public void receiveMessage(String message) {
-        System.out.println(clientThread.username + ' ' + message);
+        System.out.println(clientThread.username + ' ' + message); // debug
 
         String[] splitMsg = message.split(" ");
         if (splitMsg.length >= 3 && splitMsg[0].equals("message")) {
@@ -88,22 +89,74 @@ public class ServerNormalState extends ServerState {
             return;
         } else if (splitMsg.length == 2 && splitMsg[0].equals("startprivate")) {
             String otherUsername = splitMsg[1];
+            // check if is the user itself
+            if (clientThread.username.equals(otherUsername)) {
+                clientThread.writeToClient("privatedecline " + otherUsername + " self\n");
+                return;
+            }
+            
             // check if the other user blocked this user
-            // if no ask if the other user accept the request
+            if (clientThread.isBlacklisted(otherUsername)) {
+                // if blocked, send privatedecline directly and return
+                clientThread.writeToClient("privatedecline " + otherUsername + " blocked\n");
+                return;
+            }
+
+            // check if the other user is online
+            ClientThread otherThread = clientThread.getConnections().get(otherUsername);
+            if (otherThread == null) {
+                // if not online, sed privatedecline directly and return
+                clientThread.writeToClient("privatedecline " + otherUsername + " offline\n");
+                return;
+            } else {
+                // ask if the other user accept the request
+                otherThread.writeToClient("askprivatepermission " + clientThread.username + '\n');
+                // set the privatePermissionPeerName of the other user
+                otherThread.setPrivatePermissionPeerUsername(clientThread.username);
+            }
+            
         } else if (message.equals("private")) {
             // do nothing, just a probe to reset timer
-        } else if (splitMsg.length == 2 && splitMsg[0].equals("stopprivate")) {
+        } else if (splitMsg[0].equals("stopprivate")) {
             // do nothing here, just a probe to reset timer
             // should be handled by the peer
             // tell the peer to close the connection
         } else if (splitMsg.length == 2 && splitMsg[0].equals("privatedecline")) {
             // format: privatedecline otherusername
+            String otherUsername = splitMsg[1];
             // get the writer to the other user
+            if (otherUsername != null) {
+                // send privatedecline to the peer client if the peer client is online
+                ClientThread otherThread = clientThread.getConnections().get(otherUsername);
+                if (otherThread != null) {
+                    otherThread.writeToClient("privatedecline " + clientThread.username + " reject\n");
+                }
+            }
             // send that this user decline
-        } else if (splitMsg.length == 4 && splitMsg[0].equals("privateaccept")) {
-            // format: privateaccept otherusername ip port
+            clientThread.setPrivatePermissionPeerUsername(null);
+        } else if (splitMsg.length == 3 && splitMsg[0].equals("privateaccept")) {
+            // format: privateaccept otherusername port
+            String otherUsername = splitMsg[1];
+            // we can get the ip from this socket
+            // https://www.baeldung.com/java-client-get-ip-address
+            String forwardIP = ((InetSocketAddress)clientThread.getSocket().getRemoteSocketAddress()).getAddress().getHostAddress();
+            System.out.println("forwardIP = " + forwardIP); // debug
+            // NOTE: the port of this socket and the port in the message are different
+            // send the port in the message
+            String forwardPort = splitMsg[2];
+
             // get the writer to the other user
             // send that this user accept and give the ip and port to the other user
+            ClientThread otherThread = clientThread.getConnections().get(otherUsername);
+            if (otherThread != null) {
+                otherThread.writeToClient(String.format("privateaccept %s %s %s\n", clientThread.username, forwardIP, forwardPort));
+            }
+
+            // set back the privatePermissionPeerUsername to null to indicate 
+            // that the client is not in the PrivatePermsion state
+            clientThread.setPrivatePermissionPeerUsername(null);
         }
     }
+
+
 }

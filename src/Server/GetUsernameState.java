@@ -33,10 +33,10 @@ public class GetUsernameState extends ServerState {
 
                 // check whether the user has already logged in (using connections)
                 if (clientThread.getConnections().containsKey(clientThread.username)) {
+                    clientThread.username = null;
                     if (!clientThread.writeToClient("loggedin\n") ) {
                         return;
                     }
-                    // stay in this state
                     return;
                 }
 

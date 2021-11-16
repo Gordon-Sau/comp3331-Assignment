@@ -88,7 +88,13 @@ public class Server {
         public String username;
         public BufferedReader inFromClient;
         public BufferedWriter outToClient;
-        boolean isConnecting = true;
+        private boolean isConnecting = true;
+
+        // the peer username when the client being asked for private permission
+        // it should be null, if the client is not asking for permission
+        // this only works if only one peer is trying to connect (which is fine in this assignment)
+        // if multiple peers are trying to connect, a set of peer's username is needed
+        private String privatePermissionPeerUsername;
 
         ClientThread(Socket clientSocket) {
             this.clientSocket = clientSocket;
@@ -308,7 +314,7 @@ public class Server {
         public boolean isBlacklisted(String receiverUsername) {
             Set<String> blockers = blackLists.get(username);
             if (blockers == null) return false;
-            if (blockers.contains(username)) {
+            if (blockers.contains(receiverUsername)) {
                 return true;
             }
             return false;
@@ -336,6 +342,14 @@ public class Server {
                     }
                 }
             }
+        }
+
+        synchronized public String getPrivatePermissionPeerUsername() {
+            return privatePermissionPeerUsername;
+        }
+    
+        synchronized public void setPrivatePermissionPeerUsername(String privatePermissionPeerUsername) {
+            this.privatePermissionPeerUsername = privatePermissionPeerUsername;
         }
 
         @Override
@@ -384,6 +398,17 @@ public class Server {
                     message = inFromClient.readLine();
                 } catch (SocketTimeoutException e) {
                     writeToClient("timeout\n");
+                    // send privatedecline to the other user if this users timout during asking for private permission
+                    if (this.state instanceof ServerNormalState) {
+                        String peerUsername = getPrivatePermissionPeerUsername();
+                        if (peerUsername != null) {
+                            // send privatedecline to the peer client if the peer client is online
+                            ClientThread otherThread = getConnections().get(peerUsername);
+                            if (otherThread != null) {
+                                otherThread.writeToClient("privatedecline " + this.username + " offline\n");
+                            }
+                        }
+                    }
                     break;
                 } catch (IOException e) {
                     e.printStackTrace();

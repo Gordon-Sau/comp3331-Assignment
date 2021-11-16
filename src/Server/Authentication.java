@@ -12,7 +12,13 @@ public class Authentication extends ServerState {
     @Override
     public void receiveMessage(String message) {
         String[] splitMsg = message.split(" ");
-        if (splitMsg[0].equals("password")) {
+        if (splitMsg[0].equals("password") && splitMsg.length == 2) {
+            if (clientThread.getConnections().containsKey(clientThread.username)) {
+                clientThread.writeToClient("loggedin\n");
+                clientThread.username = null;
+                clientThread.setState(new GetUsernameState(clientThread));
+                return;
+            }
             if (splitMsg[1].equals(clientThread.getCredentials().get(clientThread.username))) {
                 if (!clientThread.writeToClient("welcome\n") ) {
                     return;

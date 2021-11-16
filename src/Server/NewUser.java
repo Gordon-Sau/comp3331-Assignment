@@ -11,6 +11,12 @@ public class NewUser extends ServerState {
     public void receiveMessage(String message) {
         String[] splitMsg = message.split(" ");
         if (splitMsg[0].equals("newpassword")) {
+            if (clientThread.getConnections().containsKey(clientThread.username)) {
+                clientThread.writeToClient("loggedin\n");
+                clientThread.username = null;
+                clientThread.setState(new GetUsernameState(clientThread));
+                return;
+            }
             clientThread.getCredentials().put(clientThread.username, splitMsg[1]);
             clientThread.appendCredential(clientThread.username + " " + splitMsg[1] + "\n");
             System.out.println("new user");
