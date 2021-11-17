@@ -146,7 +146,7 @@ public class Server {
                 }
                 return true;
             } catch (IOException e) {
-                e.printStackTrace();
+                // e.printStackTrace();
                 disconnect();
                 return false;
             }
@@ -157,7 +157,7 @@ public class Server {
                 outToClient.write(message);
                 return true;
             } catch (IOException e) {
-                e.printStackTrace();
+                // e.printStackTrace();
                 disconnect();
                 return false;
             }
@@ -168,7 +168,7 @@ public class Server {
                 outToClient.flush();
                 return true;
             } catch (IOException e) {
-                e.printStackTrace();
+                // e.printStackTrace();
                 disconnect();
                 return false;
             }
@@ -197,7 +197,7 @@ public class Server {
                     credentialsWriter.flush();
                 } catch (IOException e) {
                     System.out.println("fail to write to credentials.txt");
-                    e.printStackTrace();
+                    // e.printStackTrace();
                 }
             }
         }
@@ -387,7 +387,7 @@ public class Server {
                     closeException.printStackTrace();
                     return;
                 }
-                e.printStackTrace();
+                // e.printStackTrace();
                 return;
             }
 
@@ -403,7 +403,7 @@ public class Server {
                 try {
                     clientSocket.setSoTimeout(timeout);
                 } catch (SocketException e) {
-                    e.printStackTrace();
+                    // e.printStackTrace();
                     break;
                 }
 
@@ -425,7 +425,7 @@ public class Server {
                     }
                     break;
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    // e.printStackTrace();
                     break;
                 }
 
@@ -462,7 +462,7 @@ public class Server {
                 outToClient.close();
                 clientSocket.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                // e.printStackTrace();
                 return;
             }
 

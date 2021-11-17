@@ -15,7 +15,7 @@ public class ServerNormalState extends ServerState {
 
     @Override
     public void receiveMessage(String message) {
-        System.out.println(clientThread.username + ' ' + message); // debug
+        // System.out.println(clientThread.username + ' ' + message); // debug
 
         String[] splitMsg = message.split(" ");
         if (splitMsg.length >= 3 && splitMsg[0].equals("message")) {
@@ -138,7 +138,7 @@ public class ServerNormalState extends ServerState {
             // format: privateaccept otherusername port
             String otherUsername = splitMsg[1];
             // we can get the ip from this socket
-            // https://www.baeldung.com/java-client-get-ip-address
+            // reference: https://www.baeldung.com/java-client-get-ip-address
             String forwardIP = ((InetSocketAddress)clientThread.getSocket().getRemoteSocketAddress())
                 .getAddress().getHostAddress();
             // NOTE: the port of this socket and the port in the message are different

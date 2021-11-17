@@ -124,7 +124,7 @@ public class ClientNormalState extends ClientState{
             System.out.println(message.split(" ", 2)[1]);
 
         } else if (splitMsg[0].equals("privateaccept")) {
-            System.out.println(message); // debug
+            // System.out.println(message); // debug
             // accept private
             // format: privateaccept username ip port
             // connect to the peer

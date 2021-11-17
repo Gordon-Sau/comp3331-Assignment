@@ -45,8 +45,6 @@ public class P2PThread extends Thread {
                     } catch (IOException ioE) {
                         ioE.printStackTrace();
                         System.out.println("cannot close the socket");
-                        System.out.println("exit program");
-                        System.exit(1);
                     }
                 }
                 return;
