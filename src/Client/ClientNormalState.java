@@ -27,7 +27,7 @@ public class ClientNormalState extends ClientState{
             client.writeToServerNoExcept("unblacklist " + splitMsg[1] + '\n');
         } else if (message.equals("logout")) {
             // tell all p2p peers to close the connection and close all p2p connections as well
-            for (Map.Entry<String, P2PThread> peerThreadEntry: new ArrayList<>(client.p2pConnections.entrySet())) {
+            for (Map.Entry<String, ClientP2PThread> peerThreadEntry: new ArrayList<>(client.p2pConnections.entrySet())) {
                 // send stopprivate to the peers
                 peerThreadEntry.getValue().writeToPeerNoExcept("stopprivate\n");
                 client.p2pConnections.remove(peerThreadEntry.getKey());
@@ -46,7 +46,7 @@ public class ClientNormalState extends ClientState{
             client.writeToServerNoExcept("startprivate " + splitMsg[1] + '\n');
         } else if (splitMsg.length >= 3 && splitMsg[0].equals("private")) {
             String privateMessage = message.split(" ", 3)[2];
-            P2PThread peerThread = client.p2pConnections.get(splitMsg[1]);
+            ClientP2PThread peerThread = client.p2pConnections.get(splitMsg[1]);
             if (peerThread == null) {
                 // error message
                 System.out.println("you cannot send message to " + splitMsg[1] + " as you have not startprivate");
@@ -60,7 +60,7 @@ public class ClientNormalState extends ClientState{
             // send a probe to the server
             client.writeToServerNoExcept("stopprivate\n");
             // search the thread and close the socket
-            P2PThread peerThread = client.p2pConnections.get(splitMsg[1]);
+            ClientP2PThread peerThread = client.p2pConnections.get(splitMsg[1]);
             if (peerThread == null) {
                 // if does not have such connection
                 // print error message
@@ -131,7 +131,7 @@ public class ClientNormalState extends ClientState{
             try {
                 Socket peerSocket = new Socket(splitMsg[2], Integer.parseInt(splitMsg[3]));
                 // create a new thread to receive the message from the peer
-                P2PThread peerThread = new P2PThread(client, splitMsg[1], peerSocket);
+                ClientP2PThread peerThread = new ClientP2PThread(client, splitMsg[1], peerSocket);
                 // put the thread in the p2p connections
                 client.p2pConnections.put(splitMsg[1], peerThread);
                 peerThread.start();
@@ -157,7 +157,7 @@ public class ClientNormalState extends ClientState{
             }
         } else if (splitMsg[0].equals("askprivatepermission")) {
             // create private asking state
-            client.setState(new PrivatePermissionState(client, splitMsg[1]));
+            client.setState(new ClientPrivatePermissionState(client, splitMsg[1]));
             // ask user to type y/n
             System.out.println("Do you accept private connection with " + splitMsg[1] + "? (y/n)");
             // the logic is in the privateCreate state

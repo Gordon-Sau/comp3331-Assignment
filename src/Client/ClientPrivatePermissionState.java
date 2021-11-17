@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class PrivatePermissionState extends ClientNormalState {
+public class ClientPrivatePermissionState extends ClientNormalState {
     private String otherUsername;
-    public PrivatePermissionState(Client.ClientObj client, String otherUsername) {
+    public ClientPrivatePermissionState(Client.ClientObj client, String otherUsername) {
         super(client);
         this.otherUsername = otherUsername;
     }
@@ -15,7 +15,7 @@ public class PrivatePermissionState extends ClientNormalState {
     synchronized public void receiveCmd(String message) {
         if (message.equals("y")) {
             ServerSocket serverSocket;
-            P2PThread p2pThread;
+            ClientP2PThread p2pThread;
             try {
                 // open socket
                 serverSocket = new ServerSocket(0);
@@ -25,7 +25,7 @@ public class PrivatePermissionState extends ClientNormalState {
                 // wait for the connection from the peer
                 Socket peerSocket = serverSocket.accept();
                 // start a thread that receive private message and store it in the p2pconnections map
-                p2pThread = new P2PThread(client, otherUsername, peerSocket);
+                p2pThread = new ClientP2PThread(client, otherUsername, peerSocket);
             } catch (IOException e) {
                 e.printStackTrace();
                 System.out.println("Error occured. Cannot create private connection with " + otherUsername);

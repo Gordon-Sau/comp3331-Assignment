@@ -1,8 +1,8 @@
 package src.Client;
 
-public class LoginState extends ClientState {
+public class ClientLoginState extends ClientState {
 
-    public LoginState(Client.ClientObj client) {
+    public ClientLoginState(Client.ClientObj client) {
         super(client);
     }
 
@@ -15,15 +15,15 @@ public class LoginState extends ClientState {
     synchronized public void receiveServer(String message) {
         if (message.equals("password?")) {
             System.out.print("password: ");
-            client.setState(new EnterPasswordState(client, this));
+            client.setState(new ClientEnterPasswordState(client, this));
 
         } else if (message.equals("newuser")) {
             System.out.print("You are a new user.\ncreate a new password: ");
-            client.setState(new NewPasswordState(client, this));
+            client.setState(new ClientNewPasswordState(client, this));
 
         } else if (message.equals("wrongpassword")) {
             System.out.println("invalid password");
-            client.setState(new EnterPasswordState(client, this));
+            client.setState(new ClientEnterPasswordState(client, this));
 
         } else if (message.equals("welcome")) {
             System.out.println("welcome");
@@ -36,7 +36,7 @@ public class LoginState extends ClientState {
         } else if (message.equals("loggedin")) {
             System.out.println("This user has already logged in");
             System.out.print("username: ");
-            client.setState(new StartState(client));
+            client.setState(new ClientStartState(client));
 
         }else {
             super.receiveServer(message);

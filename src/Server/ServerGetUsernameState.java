@@ -2,8 +2,8 @@ package src.Server;
 
 import java.time.LocalDateTime;
 
-public class GetUsernameState extends ServerState {
-    public GetUsernameState(Server.ClientThread clientThread) {
+public class ServerGetUsernameState extends ServerState {
+    public ServerGetUsernameState(Server.ClientThread clientThread) {
         super(clientThread);
     }
 
@@ -44,13 +44,13 @@ public class GetUsernameState extends ServerState {
                 if (!clientThread.writeToClient("password?\n")) {
                     return;
                 }
-                clientThread.setState(new Authentication(clientThread));
+                clientThread.setState(new ServerAuthentication(clientThread));
 
             } else {
                 if (!clientThread.writeToClient("newuser\n") ) {
                     return;
                 }
-                clientThread.setState(new NewUser(clientThread));
+                clientThread.setState(new ServerNewUser(clientThread));
             }
         }
     }

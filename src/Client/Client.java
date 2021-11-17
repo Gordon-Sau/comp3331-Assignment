@@ -25,7 +25,7 @@ public class Client {
         public BufferedWriter outToServer;
         public BufferedReader cmdReader;
         public ClientState state;
-        public Map<String, P2PThread> p2pConnections = new ConcurrentHashMap<>();
+        public Map<String, ClientP2PThread> p2pConnections = new ConcurrentHashMap<>();
 
         public ClientObj(Socket serverConnection) {
             this.serverConnection = serverConnection;
@@ -46,12 +46,12 @@ public class Client {
             outToServer = new BufferedWriter(new OutputStreamWriter(dataOutputStream));
             cmdReader = new BufferedReader(new InputStreamReader(System.in));
 
-            ServerReceiveThread serverReceiveThread = new ServerReceiveThread(this);
+            ClientServerReceiveThread serverReceiveThread = new ClientServerReceiveThread(this);
             serverReceiveThread.start();
 
             // this thread is the thread that handle input from command line
 
-            state = new StartState(this);
+            state = new ClientStartState(this);
             System.out.print("username: ");
 
             // read from both command line and send messages to server

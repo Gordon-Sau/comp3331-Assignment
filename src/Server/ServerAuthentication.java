@@ -2,10 +2,10 @@ package src.Server;
 
 import src.Server.Server.ClientThread;
 
-public class Authentication extends ServerState {
+public class ServerAuthentication extends ServerState {
     private int numWrongLogin = 0;
 
-    public Authentication(Server.ClientThread clientThread) {
+    public ServerAuthentication(Server.ClientThread clientThread) {
         super(clientThread);
     }
 
@@ -16,7 +16,7 @@ public class Authentication extends ServerState {
             if (clientThread.getConnections().containsKey(clientThread.username)) {
                 clientThread.writeToClient("loggedin\n");
                 clientThread.username = null;
-                clientThread.setState(new GetUsernameState(clientThread));
+                clientThread.setState(new ServerGetUsernameState(clientThread));
                 return;
             }
             if (splitMsg[1].equals(clientThread.getCredentials().get(clientThread.username))) {

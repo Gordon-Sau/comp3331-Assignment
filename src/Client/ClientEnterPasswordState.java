@@ -1,8 +1,8 @@
 package src.Client;
 
-public class EnterPasswordState extends ClientState {
-    private LoginState loginState;
-    public EnterPasswordState(Client.ClientObj client, LoginState prevLoginState) {
+public class ClientEnterPasswordState extends ClientState {
+    private ClientLoginState loginState;
+    public ClientEnterPasswordState(Client.ClientObj client, ClientLoginState prevLoginState) {
         super(client);
         this.loginState = prevLoginState;
     }

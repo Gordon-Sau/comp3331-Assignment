@@ -10,7 +10,7 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.net.SocketException;
 
-public class P2PThread extends Thread {
+public class ClientP2PThread extends Thread {
     public String peerUsername;
     public BufferedReader inFromPeer;
     public BufferedWriter outToPeer;
@@ -18,7 +18,7 @@ public class P2PThread extends Thread {
     public Client.ClientObj client;
     private boolean isStopped = false;
 
-    public P2PThread(Client.ClientObj client, String peerUsername, Socket socket) throws IOException {
+    public ClientP2PThread(Client.ClientObj client, String peerUsername, Socket socket) throws IOException {
         this.client = client;
         this.peerUsername = peerUsername;
         this.socket = socket;

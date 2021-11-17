@@ -395,7 +395,7 @@ public class Server {
             inFromClient = new BufferedReader(new InputStreamReader(dataInputStream));
             outToClient = new BufferedWriter(new OutputStreamWriter(dataOutputStream));
 
-            state = new GetUsernameState(this);
+            state = new ServerGetUsernameState(this);
 
             String message;
             while (isConnecting) {

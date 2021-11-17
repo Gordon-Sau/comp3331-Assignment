@@ -2,8 +2,8 @@ package src.Server;
 
 import src.Server.Server.ClientThread;
 
-public class NewUser extends ServerState {
-    public NewUser(Server.ClientThread clientThread) {
+public class ServerNewUser extends ServerState {
+    public ServerNewUser(Server.ClientThread clientThread) {
         super(clientThread);
     }
 
@@ -14,7 +14,7 @@ public class NewUser extends ServerState {
             if (clientThread.getConnections().containsKey(clientThread.username)) {
                 clientThread.writeToClient("loggedin\n");
                 clientThread.username = null;
-                clientThread.setState(new GetUsernameState(clientThread));
+                clientThread.setState(new ServerGetUsernameState(clientThread));
                 return;
             }
             clientThread.getCredentials().put(clientThread.username, splitMsg[1]);

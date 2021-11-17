@@ -2,9 +2,9 @@ package src.Client;
 
 import java.io.IOException;
 
-public class ServerReceiveThread extends Thread {
+public class ClientServerReceiveThread extends Thread {
     Client.ClientObj client;
-    public ServerReceiveThread(Client.ClientObj client) {
+    public ClientServerReceiveThread(Client.ClientObj client) {
         this.client = client;
     }
     
